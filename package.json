@@ -7,14 +7,12 @@
   "type": "commonjs",
   "main": "parse_fixtures.ts",
   "scripts": {
-    "start": "npx ts-node index.ts",
+    "start": "node index.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "devDependencies": {
-    "@types/node": "^24.9.1",
     "@types/uuid": "^10.0.0",
     "cheerio": "^1.1.2",
-    "ts-node": "^10.9.2",
     "typescript": "^5.9.3",
     "uuid": "^13.0.0"
   }
