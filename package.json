@@ -1,0 +1,18 @@
+{
+  "name": "pool-league-fixtures",
+  "version": "1.0.0",
+  "description": "",
+  "license": "ISC",
+  "author": "",
+  "type": "commonjs",
+  "main": "parse_fixtures.ts",
+  "scripts": {
+    "start": "npx ts-node parse_fixtures.ts",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "devDependencies": {
+    "@types/node": "^24.9.1",
+    "cheerio": "^1.1.2",
+    "uuid": "^13.0.0"
+  }
+}
