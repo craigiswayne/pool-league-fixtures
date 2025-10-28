@@ -40,6 +40,9 @@ jobs:
       - name: Build iCal file from HTML
         run: npm run start
 
+      - name: List files in dist
+        run: ls -la dist
+
       - name: Create/Update 'latest' Release with Calendar
         uses: softprops/action-gh-release@v1
         with:
