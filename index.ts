@@ -6,7 +6,7 @@ import { v4 as uuidv4 } from 'uuid';
 
 // --- 1. Define Constants ---
 const HTML_FILE_PATH: string = path.resolve(__dirname, 'fixtures.html');
-const ICS_OUTPUT_PATH: string = path.resolve(__dirname, 'fixtures.ics');
+const ICS_OUTPUT_PATH: string = path.resolve(__dirname, 'dist/fixtures.ics');
 
 // --- 2. Define the Shared Interface ---
 interface Fixture {
