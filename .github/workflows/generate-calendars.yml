@@ -1,8 +1,5 @@
-# .github/workflows/publish_calendar.yml
-
 name: Publish Fixture Calendar
 
-# Run automatically when you push to the 'main' branch
 on:
   push:
     branches:
@@ -26,37 +23,22 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v5
         with:
-          node-version: '20'
+          node-version: '24'
           cache: 'npm'
 
       - name: Install Dependencies
         run: npm install
 
-      - name: Build JSON from HTML
-        run: npx ts-node parse_fixtures.ts
+      - name: Build iCal file from HTML
+        run: npm run start
 
-      - name: Build iCal from JSON
-        run: npx ts-node create_ical.ts
-
-      # --- 3. Create/Update Release and Upload Asset ---
-      # This action is the new part. It will find a release with the
-      # tag "latest-calendar". If it doesn't exist, it creates one.
-      # If it *does* exist, it updates it, replacing the asset files.
       - name: Create/Update 'latest' Release with Calendar
         uses: softprops/action-gh-release@v1
         with:
-          # We use a static tag name. This is the key to making it
-          # update the same release instead of creating new ones.
           tag_name: "latest-calendar"
-
-          # This is the title of the release you'll see on GitHub
           name: "Latest Fixtures Calendar"
-
           body: "This release contains the most up-to-date fixtures.ics file. Subscribe to the .ics file below."
-
-          # List of files to upload as assets.
           files: |
             fixtures.ics
         env:
-          # This token is automatically provided by GitHub Actions
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
