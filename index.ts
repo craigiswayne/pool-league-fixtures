@@ -125,8 +125,18 @@ const convert_fixtures_to_ical = (fixtures: Fixture[]): string => {
 
 // --- 6. iCal Saving Function (Synchronous) ---
 const save_ical_file = (file_path: string, ical_data: string): void => {
-    // fs.writeFileSync will write the entire file before
-    // the script moves on.
+    // Get the directory path from the full file_path
+    const dir_path: string = path.dirname(file_path);
+
+    // Check if the directory exists
+    if (!fs.existsSync(dir_path)) {
+        // If it doesn't exist, create it.
+        // { recursive: true } is like 'mkdir -p', it creates all parent folders needed.
+        fs.mkdirSync(dir_path, { recursive: true });
+        console.log(`Created new directory at: ${dir_path}`);
+    }
+
+    // Now we know the directory exists, so we can write the file
     fs.writeFileSync(file_path, ical_data, 'utf8');
 };
 
@@ -163,6 +173,8 @@ const main = (): void => {
         } else {
             console.error(`❌ An error occurred during the build:`, error.message);
         }
+        console.log('Some other error has occurred.');
+        console.error(error)
         process.exit(1); // Exit with a non-zero code to indicate failure
     }
 };
