@@ -14,7 +14,7 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  build-and-release:
+  generate:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Repository
@@ -35,10 +35,10 @@ jobs:
       - name: Create/Update 'latest' Release with Calendar
         uses: softprops/action-gh-release@v1
         with:
-          tag_name: "latest-calendar"
           name: "Latest Fixtures Calendar"
+          tag_name: "latest-calendar"
+          fail_on_unmatched_files: true
           body: "This release contains the most up-to-date fixtures.ics file. Subscribe to the .ics file below."
-          files: |
-            fixtures.ics
+          files: fixtures.ics
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
