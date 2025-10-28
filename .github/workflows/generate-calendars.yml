@@ -32,6 +32,11 @@ jobs:
       - name: Create dist directory
         run: mkdir -p dist
 
+      - name: Check for fixtures.html
+        run: |
+          echo "Listing all files in the current directory:"
+          ls -la
+
       - name: Build iCal file from HTML
         run: npm run start
 
