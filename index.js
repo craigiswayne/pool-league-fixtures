@@ -6,10 +6,29 @@ const { v4: uuidv4 } = require('uuid');
 // --- 1. Define Constants ---
 const HTML_FILE_PATH = path.resolve(__dirname, 'fixtures.html');
 const ICS_OUTPUT_PATH = path.resolve(__dirname, 'dist/fixtures.ics');
+// NEW: Path to the location mapper
+const LOCATION_MAPPER_PATH = path.resolve(__dirname, 'location_mapper.json');
 
 // --- 2. HTML Loading Function (Synchronous) ---
 const load_html_file = (file_path) => {
     return fs.readFileSync(file_path, 'utf8');
+};
+
+// NEW: Function to load the JSON location mapper
+const load_location_mapper = (file_path) => {
+    if (!fs.existsSync(file_path)) {
+        // Return an empty object if the file doesn't exist
+        console.warn(`Warning: Location mapper file not found at ${file_path}.`);
+        return {};
+    }
+    try {
+        const file_content = fs.readFileSync(file_path, 'utf8');
+        return JSON.parse(file_content);
+    } catch (error) {
+        console.error(`Error loading location mapper: ${error.message}`);
+        // Return an empty object on error to allow script to continue
+        return {};
+    }
 };
 
 // --- 3. HTML Parsing Function (Synchronous) ---
@@ -46,7 +65,7 @@ const parse_fixtures = (html_content) => {
             time,
             home_team,
             away_team,
-            venue
+            venue // This will be the original parsed venue, e.g., "railway"
         });
     });
     return fixtures;
@@ -61,6 +80,7 @@ const parse_utc_date = (date_str, time_str) => {
     }
     const day = parseInt(date_parts[0], 10);
     const month = parseInt(date_parts[1], 10) - 1;
+    // Assuming 21st century for 2-digit years
     const year = parseInt(date_parts[2], 10) + 2000;
     const hour = parseInt(time_parts[0], 10);
     const minute = parseInt(time_parts[1], 10);
@@ -71,7 +91,8 @@ const format_date_for_ical = (date) => {
     return date.toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z';
 };
 
-const convert_fixtures_to_ical = (fixtures) => {
+// NEW: Updated function signature to accept the location mapper
+const convert_fixtures_to_ical = (fixtures, location_mapper) => {
     if (fixtures.length === 0) {
         throw new Error("No fixtures were parsed from the HTML.");
     }
@@ -94,13 +115,20 @@ const convert_fixtures_to_ical = (fixtures) => {
         const dtstart_formatted = format_date_for_ical(start_date);
         const dtend_formatted = format_date_for_ical(end_date);
         const summary = `${fixture.home_team} vs ${fixture.away_team}`;
-        const location = fixture.venue;
+
+        // NEW: Logic to look up the location
+        // fixture.venue is the original parsed value (e.g., "railway")
+        // We look it up in the mapper. If found, use the mapped value.
+        // If not found, (location_mapper[fixture.venue] is undefined),
+        // we use the original fixture.venue as a fallback.
+        const location = location_mapper[fixture.venue.toLowerCase()] || fixture.venue;
+
         const uid = uuidv4();
         ical_lines.push(
             'BEGIN:VEVENT',
             `UID:${uid}`,
             `SUMMARY:${summary}`,
-            `LOCATION:${location}`,
+            `LOCATION:${location}`, // NEW: Uses the mapped location
             `DTSTAMP:${dtstamp}`,
             `DTSTART:${dtstart_formatted}`,
             `DTEND:${dtend_formatted}`,
@@ -125,13 +153,19 @@ const save_ical_file = (file_path, ical_data) => {
 const main = () => {
     try {
         console.log(`Starting calendar build from ${HTML_FILE_PATH}...`);
+
+        // NEW: Load the location mapper
+        console.log("Loading location mapper...");
+        const location_mapper = load_location_mapper(LOCATION_MAPPER_PATH);
+
         const html_content = load_html_file(HTML_FILE_PATH);
 
         console.log("Parsing HTML content...");
         const fixtures = parse_fixtures(html_content);
 
         console.log(`Found ${fixtures.length} fixtures. Converting to iCal...`);
-        const ical_string = convert_fixtures_to_ical(fixtures);
+        // NEW: Pass the mapper to the conversion function
+        const ical_string = convert_fixtures_to_ical(fixtures, location_mapper);
 
         console.log("Saving iCal file...");
         save_ical_file(ICS_OUTPUT_PATH, ical_string);
