@@ -19,7 +19,7 @@ const parse_fixtures = (html_content) => {
     }
     const $ = cheerio.load(html_content);
     const fixtures = [];
-    const table_rows = $('tbody tr');
+    const table_rows = $('table:not(.fixed) tbody tr');
     if (table_rows.length === 0) {
         console.warn("No fixture rows found in the table body.");
         return [];
