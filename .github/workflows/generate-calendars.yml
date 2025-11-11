@@ -35,18 +35,10 @@ jobs:
         run: mkdir -p dist
 
       - name: Scrape Fixtures
-        run: |
-          sh scrape.sh > fixtures.html
-
-      - name: View HTML
-        run: |
-          cat fixtures.html
+        run: sh scrape.sh > fixtures.html
 
       - name: Build iCal file from HTML
         run: node index.js
-
-      - name: List files in dist
-        run: ls -la dist
 
       - name: Create/Update 'latest' Release with Calendar
         uses: softprops/action-gh-release@v1

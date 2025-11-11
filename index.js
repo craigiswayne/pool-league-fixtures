@@ -3,21 +3,16 @@ const path = require('path');
 const cheerio = require('cheerio');
 const { v4: uuidv4 } = require('uuid');
 
-// --- 1. Define Constants ---
 const HTML_FILE_PATH = path.resolve(__dirname, 'fixtures.html');
 const ICS_OUTPUT_PATH = path.resolve(__dirname, 'dist/fixtures.ics');
-// NEW: Path to the location mapper
 const LOCATION_MAPPER_PATH = path.resolve(__dirname, 'location_mapper.json');
 
-// --- 2. HTML Loading Function (Synchronous) ---
 const load_html_file = (file_path) => {
     return fs.readFileSync(file_path, 'utf8');
 };
 
-// NEW: Function to load the JSON location mapper
 const load_location_mapper = (file_path) => {
     if (!fs.existsSync(file_path)) {
-        // Return an empty object if the file doesn't exist
         console.warn(`Warning: Location mapper file not found at ${file_path}.`);
         return {};
     }
@@ -26,21 +21,24 @@ const load_location_mapper = (file_path) => {
         return JSON.parse(file_content);
     } catch (error) {
         console.error(`Error loading location mapper: ${error.message}`);
-        // Return an empty object on error to allow script to continue
         return {};
     }
 };
 
-// --- 3. HTML Parsing Function (Synchronous) ---
+/**
+ *
+ * @param html_content
+ * @return {{ date: string, time: string, home_team: string, away_team: string, venue: string }[]}
+ */
 const parse_fixtures = (html_content) => {
     if (!html_content) {
-        throw new Error("No HTML content provided.");
+        throw new Error('No HTML content provided.');
     }
     const $ = cheerio.load(html_content);
     const fixtures = [];
     const table_rows = $('table:not(.fixed) tbody tr');
     if (table_rows.length === 0) {
-        console.warn("No fixture rows found in the table body.");
+        console.warn('No fixture rows found in the table body.');
         return [];
     }
     table_rows.each((index, row) => {
@@ -65,13 +63,12 @@ const parse_fixtures = (html_content) => {
             time,
             home_team,
             away_team,
-            venue // This will be the original parsed venue, e.g., "railway"
+            venue
         });
     });
     return fixtures;
 };
 
-// --- 4. iCal Conversion Functions (Synchronous) ---
 const parse_utc_date = (date_str, time_str) => {
     const date_parts = date_str.split('/');
     const time_parts = time_str.split(':');
@@ -91,10 +88,9 @@ const format_date_for_ical = (date) => {
     return date.toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z';
 };
 
-// NEW: Updated function signature to accept the location mapper
 const convert_fixtures_to_ical = (fixtures, location_mapper) => {
     if (fixtures.length === 0) {
-        throw new Error("No fixtures were parsed from the HTML.");
+        throw new Error('No fixtures were parsed from the HTML.');
     }
     const crlf = '\r\n';
     const dtstamp = format_date_for_ical(new Date());
@@ -116,12 +112,7 @@ const convert_fixtures_to_ical = (fixtures, location_mapper) => {
         const dtend_formatted = format_date_for_ical(end_date);
         const summary = `${fixture.home_team} vs ${fixture.away_team}`;
 
-        // NEW: Logic to look up the location
-        // fixture.venue is the original parsed value (e.g., "railway")
-        // We look it up in the mapper. If found, use the mapped value.
-        // If not found, (location_mapper[fixture.venue] is undefined),
-        // we use the original fixture.venue as a fallback.
-        const location = location_mapper[fixture.venue.toLowerCase()] || fixture.venue;
+        let location = location_mapper[fixture.venue.toLowerCase()] || fixture.venue;
 
         const uid = uuidv4();
         ical_lines.push(
@@ -139,7 +130,6 @@ const convert_fixtures_to_ical = (fixtures, location_mapper) => {
     return ical_lines.join(crlf);
 };
 
-// --- 5. iCal Saving Function (Synchronous) ---
 const save_ical_file = (file_path, ical_data) => {
     const dir_path = path.dirname(file_path);
     if (!fs.existsSync(dir_path)) {
@@ -149,25 +139,22 @@ const save_ical_file = (file_path, ical_data) => {
     fs.writeFileSync(file_path, ical_data, 'utf8');
 };
 
-// --- 6. Main Execution (Synchronous) ---
 const main = () => {
     try {
         console.log(`Starting calendar build from ${HTML_FILE_PATH}...`);
 
-        // NEW: Load the location mapper
-        console.log("Loading location mapper...");
+        console.log('Loading location mapper...');
         const location_mapper = load_location_mapper(LOCATION_MAPPER_PATH);
 
         const html_content = load_html_file(HTML_FILE_PATH);
 
-        console.log("Parsing HTML content...");
+        console.log('Parsing HTML content...');
         const fixtures = parse_fixtures(html_content);
 
         console.log(`Found ${fixtures.length} fixtures. Converting to iCal...`);
-        // NEW: Pass the mapper to the conversion function
         const ical_string = convert_fixtures_to_ical(fixtures, location_mapper);
 
-        console.log("Saving iCal file...");
+        console.log('Saving iCal file...');
         save_ical_file(ICS_OUTPUT_PATH, ical_string);
 
         console.log(`✅ Successfully created iCal file at ${ICS_OUTPUT_PATH}`);
