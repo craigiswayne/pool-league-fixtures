@@ -3,7 +3,7 @@ const fs = require('fs').promises;
 const path = require('path');
 const {slugify} = require("./slugify");
 
-const ROOT_DIR = path.resolve(__dirname, '../');
+const ROOT_DIR = path.resolve('./');
 const OUTPUT_DIR = path.resolve(ROOT_DIR, 'dist');
 const TEAMS_FILE_PATH = path.join(ROOT_DIR, 'teams.json');
 
@@ -36,7 +36,7 @@ const scrape_team_fixtures = async (team_url, team_name) => {
     }
 
     const file_name = `team-page-${slugify(team_name)}.html`;
-    const output_path = path.join(__dirname, OUTPUT_DIR, file_name);
+    const output_path = path.join(OUTPUT_DIR, file_name);
 
     try {
         console.log(`🚀 Starting scrape for: ${team_name} (${team_url})`);
