@@ -5,7 +5,7 @@ const {slugify} = require("./slugify");
 
 const ROOT_DIR = path.resolve(__dirname, '../');
 const OUTPUT_DIR = path.resolve(ROOT_DIR, 'dist');
-const TEAMS_FILE_PATH = path.join(__dirname, 'teams.json');
+const TEAMS_FILE_PATH = path.join(ROOT_DIR, 'teams.json');
 
 const http_headers = {
     'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7',
