@@ -38,8 +38,11 @@ jobs:
       - name: 'Scrape Website for Fixtures'
         run: node get-html-fixtures.js
 
-      - name: 'Build iCal file from HTML'
-        run: node create-calendars.js
+      - name: 'Extract html Fixtures to json'
+        run: node fixtures-html-to-json.js
+
+      - name: 'Convert json Fixtures to ics'
+        run: node fixtures-json-to-ics.js
 
       - name: Create/Update 'latest' Release with Calendar
         uses: softprops/action-gh-release@v1
