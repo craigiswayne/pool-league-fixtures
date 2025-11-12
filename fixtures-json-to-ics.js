@@ -170,7 +170,7 @@ const main = async () => {
 
             const json_file_name = `fixtures-${slugify(team.name)}.json`;
             const json_file_path = path.join(DIST_DIR, json_file_name);
-            const ics_file_name = `fixtures-${slugify(team.name)}.ics`; // This matches your original file
+            const ics_file_name = `${slugify(team.name)}.ics`;
             const ics_output_path = path.join(DIST_DIR, ics_file_name);
 
             console.log(`--- Processing ${team.name} ---`);

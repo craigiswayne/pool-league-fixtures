@@ -4,7 +4,6 @@ on:
   push:
     branches:
       - 'main'
-      - 'feature/include-old-fixtures'
   schedule:
     - cron: '1 0 * * 1'
   workflow_dispatch:
@@ -48,7 +47,7 @@ jobs:
         uses: softprops/action-gh-release@v1
         with:
           name: 'Latest Fixtures Calendar'
-          tag_name: 'latest-calendar-test'
+          tag_name: 'latest'
           fail_on_unmatched_files: true
           body: 'This release contains the most up-to-date fixtures for each team. Subscribe to the .ics files below.'
           files: dist/*.ics
