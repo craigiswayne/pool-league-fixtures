@@ -3,11 +3,9 @@ const path = require('path');
 const cheerio = require('cheerio');
 const {slugify} = require("./slugify");
 
-// --- Configuration Paths ---
-const DIST_DIR = path.resolve(__dirname, 'dist');
-const TEAMS_FILE_PATH = path.resolve(__dirname, 'teams.json');
-
-// --- File Handlers ---
+const ROOT_DIR = path.resolve(__dirname, '../');
+const DIST_DIR = path.resolve(ROOT_DIR, 'dist');
+const TEAMS_FILE_PATH = path.resolve(ROOT_DIR, 'teams.json');
 
 /**
  * Asynchronously loads the specified HTML file.
@@ -48,31 +46,28 @@ const load_teams_async = async (file_path) => {
 const save_json_file_async = async (file_path, data) => {
     const dir_path = path.dirname(file_path);
     await fs.mkdir(dir_path, { recursive: true });
-    // Using JSON.stringify with formatting for readability
     await fs.writeFile(file_path, JSON.stringify(data, null, 2), 'utf8');
 };
 
-// --- Parsing Function ---
-
 /**
- * Parses the HTML content to find fixtures.
+ * Parses the HTML content to find results.
  * @param {string} html_content
- * @return {{ date: string, time: string, home_team: string, away_team: string, venue: string }[]}
+ * @return {{ date: string, time: string, home_team: string, away_team: string, venue: string, result: string}[]}
  */
-const parse_fixtures = (html_content) => {
+const parse_results = (html_content) => {
     if (!html_content) {
         throw new Error('No HTML content provided.');
     }
     const $ = cheerio.load(html_content);
-    const fixtures = [];
-    const table_rows = $('table:not(.fixed) tbody tr');
+    const results = [];
+    const table_rows = $('table.fixed tbody tr');
     if (table_rows.length === 0) {
         console.warn('No fixture rows found in the table body.');
         return [];
     }
     table_rows.each((index, row) => {
         const cells = $(row).find('td');
-        if (cells.length < 6) {
+        if (cells.length < 5) {
             console.warn(`Skipping row ${index + 1}: Incomplete data.`);
             return;
         }
@@ -85,20 +80,20 @@ const parse_fixtures = (html_content) => {
         const date = date_time_parts[0] || 'N/A';
         const time = date_time_parts[1] || 'N/A';
         const home_team = $(cells.get(2)).text().trim();
+        const result = $(cells.get(3)).text().trim().replace(/\s/g, '');
         const away_team = $(cells.get(4)).text().trim();
-        const venue = $(cells.get(5)).text().trim();
-        fixtures.push({
+        const venue = '';
+        results.push({
             date,
             time,
             home_team,
             away_team,
-            venue
+            venue,
+            result
         });
     });
-    return fixtures;
+    return results;
 };
-
-// --- Main Execution ---
 
 /**
  * Main async function to run the HTML -> JSON build process.
@@ -121,30 +116,26 @@ const main = async () => {
                 continue;
             }
 
-            // Define input and output paths
-            const html_file_name = `upcoming-fixtures-${slugify(team.name)}.html`;
+            const html_file_name = `team-page-${slugify(team.name)}.html`;
             const html_file_path = path.join(DIST_DIR, html_file_name);
-            const json_file_name = `fixtures-${slugify(team.name)}.json`;
+            const json_file_name = `results-${slugify(team.name)}.json`;
             const json_output_path = path.join(DIST_DIR, json_file_name);
 
             console.log(`--- Processing ${team.name} ---`);
 
             try {
-                // 1. Load HTML
                 const html_content = await load_html_file_async(html_file_path);
 
-                // 2. Parse HTML to fixture array
                 console.log(`Parsing HTML for ${team.name}...`);
-                const fixtures = parse_fixtures(html_content);
+                const results = parse_results(html_content);
 
-                // 3. Save fixture array to JSON
-                await save_json_file_async(json_output_path, fixtures);
+                await save_json_file_async(json_output_path, results);
                 console.log(`✅ Successfully created JSON file for ${team.name} at ${json_output_path}`);
 
             } catch (error) {
                 if (error.code === 'ENOENT') {
                     console.error(`❌ Error for ${team.name}: HTML file not found at ${html_file_path}.`);
-                    console.log(`   -> Did you run 'node get-html-fixtures.js' first?`);
+                    console.log(`   -> Did you run 'node get-team-pages.js' first?`);
                 } else {
                     console.error(`❌ An error occurred processing ${team.name}:`, error.message);
                 }
