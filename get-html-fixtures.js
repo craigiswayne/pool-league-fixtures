@@ -1,6 +1,7 @@
 const axios = require('axios');
 const fs = require('fs').promises;
 const path = require('path');
+const {slugify} = require("./slugify");
 
 const OUTPUT_DIR = 'dist';
 
@@ -34,7 +35,7 @@ const scrape_team_fixtures = async (team_url, team_name) => {
         return; // Skip this scrape
     }
 
-    const file_name = `upcoming-fixtures-${team_name.toLowerCase()}.html`;
+    const file_name = `upcoming-fixtures-${slugify(team_name)}.html`;
     const output_path = path.join(__dirname, OUTPUT_DIR, file_name);
 
     try {
@@ -91,8 +92,8 @@ const main = async () => {
     console.log(`Found ${teams.length} team(s) to scrape...`);
 
     for (const team of teams) {
-        if (team && team.url && team.team) {
-            await scrape_team_fixtures(team.url, team.team);
+        if (team && team.url && team.name) {
+            await scrape_team_fixtures(team.url, team.name);
         } else {
             console.warn('⚠️ Skipping invalid team entry in teams.json:', team);
         }

@@ -4,7 +4,6 @@
   "description": "",
   "license": "ISC",
   "author": "",
-  "type": "commonjs",
   "scripts": {
     "start": "node create-calendars.js",
     "test": "echo \"Error: no test specified\" && exit 1"

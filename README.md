@@ -20,8 +20,6 @@
 
 ```shell
 node get-html-fixtures.js
-```
-
-```shell
-node create-calendars.js
+node fixtures-html-to-json.js
+node fixtures-json-to-ics.js
 ```

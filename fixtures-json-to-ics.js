@@ -1,19 +1,24 @@
 const fs = require('fs').promises;
 const path = require('path');
-const cheerio = require('cheerio');
 const { v4: uuidv4 } = require('uuid');
+const {slugify} = require("./slugify");
 
+// --- Configuration Paths ---
 const DIST_DIR = path.resolve(__dirname, 'dist');
 const LOCATION_MAPPER_PATH = path.resolve(__dirname, 'location_mapper.json');
 const TEAMS_FILE_PATH = path.resolve(__dirname, 'teams.json');
 
+// --- File Handlers ---
+
 /**
- * Asynchronously loads the specified HTML file.
- * @param {string} file_path - The path to the HTML file.
- * @returns {Promise<string>} The HTML content.
+ * Asynchronously loads the specified JSON fixture file.
+ * @param {string} file_path - The path to the fixture .json file.
+ * @returns {Promise<Array<object>>} The array of fixture objects.
  */
-const load_html_file_async = async (file_path) => {
-    return fs.readFile(file_path, 'utf8');
+const load_fixture_json_async = async (file_path) => {
+    // try...catch will be handled by the main loop
+    const file_content = await fs.readFile(file_path, 'utf8');
+    return JSON.parse(file_content);
 };
 
 /**
@@ -23,7 +28,7 @@ const load_html_file_async = async (file_path) => {
  */
 const load_location_mapper_async = async (file_path) => {
     try {
-        await fs.access(file_path); // Check if file exists
+        await fs.access(file_path);
         const file_content = await fs.readFile(file_path, 'utf8');
         return JSON.parse(file_content);
     } catch (error) {
@@ -32,7 +37,7 @@ const load_location_mapper_async = async (file_path) => {
         } else {
             console.error(`Error loading location mapper: ${error.message}`);
         }
-        return {}; // Return an empty mapper
+        return {};
     }
 };
 
@@ -53,7 +58,6 @@ const load_teams_async = async (file_path) => {
         } else {
             console.error(`❌ Error reading teams file: ${error.message}`);
         }
-        // Re-throw the error to stop the main function
         throw new Error('Failed to load teams file.');
     }
 };
@@ -70,49 +74,7 @@ const save_ical_file_async = async (file_path, ical_data) => {
     await fs.writeFile(file_path, ical_data, 'utf8');
 };
 
-/**
- * Parses the HTML content to find fixtures.
- * @param {string} html_content
- * @return {{ date: string, time: string, home_team: string, away_team: string, venue: string }[]}
- */
-const parse_fixtures = (html_content) => {
-    if (!html_content) {
-        throw new Error('No HTML content provided.');
-    }
-    const $ = cheerio.load(html_content);
-    const fixtures = [];
-    const table_rows = $('table:not(.fixed) tbody tr');
-    if (table_rows.length === 0) {
-        console.warn('No fixture rows found in the table body.');
-        return [];
-    }
-    table_rows.each((index, row) => {
-        const cells = $(row).find('td');
-        if (cells.length < 6) {
-            console.warn(`Skipping row ${index + 1}: Incomplete data.`);
-            return;
-        }
-        const date_time_html = $(cells.get(1)).html();
-        if (!date_time_html) {
-            console.warn(`Skipping row ${index + 1}: Missing date/time.`);
-            return;
-        }
-        const date_time_parts = date_time_html.split('<br>').map(s => s.trim());
-        const date = date_time_parts[0] || 'N/A';
-        const time = date_time_parts[1] || 'N/A';
-        const home_team = $(cells.get(2)).text().trim();
-        const away_team = $(cells.get(4)).text().trim();
-        const venue = $(cells.get(5)).text().trim();
-        fixtures.push({
-            date,
-            time,
-            home_team,
-            away_team,
-            venue
-        });
-    });
-    return fixtures;
-};
+// --- iCal Conversion Functions ---
 
 const parse_utc_date = (date_str, time_str) => {
     const date_parts = date_str.split('/');
@@ -132,9 +94,15 @@ const format_date_for_ical = (date) => {
     return date.toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z';
 };
 
+/**
+ * Converts the array of fixture objects into a single iCal string.
+ * @param {Array<object>} fixtures - The array of fixture data from JSON.
+ * @param {object} location_mapper - The location mapper object.
+ * @returns {string}
+ */
 const convert_fixtures_to_ical = (fixtures, location_mapper) => {
     if (fixtures.length === 0) {
-        console.warn('No fixtures were parsed from the HTML. An empty calendar file will be created.');
+        console.warn('No fixtures found in the JSON. An empty calendar file will be created.');
     }
     const crlf = '\r\n';
     const dtstamp = format_date_for_ical(new Date());
@@ -174,13 +142,16 @@ const convert_fixtures_to_ical = (fixtures, location_mapper) => {
     return ical_lines.join(crlf);
 };
 
+// --- Main Execution ---
+
 /**
- * Main async function to run the build process for all teams.
+ * Main async function to run the JSON -> iCal build process.
  */
 const main = async () => {
     try {
-        console.log('Starting calendar build process...');
+        console.log('Starting JSON-to-iCal build process...');
 
+        // Load common resources once
         const location_mapper = await load_location_mapper_async(LOCATION_MAPPER_PATH);
         const teams = await load_teams_async(TEAMS_FILE_PATH);
 
@@ -192,52 +163,45 @@ const main = async () => {
         console.log(`Found ${teams.length} team(s) to process...`);
 
         for (const team of teams) {
-            if (!team || !team.team) {
+            if (!team || !team.name) {
                 console.warn('⚠️ Skipping invalid team entry in teams.json:', team);
                 continue;
             }
 
-            const team_name = team.team;
-            const team_name_lower = team_name.toLowerCase();
-
-            const html_file_name = `upcoming-fixtures-${team_name_lower}.html`;
-            const html_file_path = path.join(DIST_DIR, html_file_name);
-
-            const ics_file_name = `fixtures-${team_name_lower}.ics`;
+            const json_file_name = `fixtures-${slugify(team.name)}.json`;
+            const json_file_path = path.join(DIST_DIR, json_file_name);
+            const ics_file_name = `fixtures-${slugify(team.name)}.ics`; // This matches your original file
             const ics_output_path = path.join(DIST_DIR, ics_file_name);
 
-            console.log(`--- Processing ${team_name} ---`);
+            console.log(`--- Processing ${team.name} ---`);
 
             try {
-                const html_content = await load_html_file_async(html_file_path);
+                // 1. Load fixtures from JSON
+                const fixtures = await load_fixture_json_async(json_file_path);
 
-                console.log(`Parsing HTML for ${team_name}...`);
-                const fixtures = parse_fixtures(html_content);
-
+                // 2. Convert to iCal
                 console.log(`Found ${fixtures.length} fixtures. Converting to iCal...`);
                 const ical_string = convert_fixtures_to_ical(fixtures, location_mapper);
 
+                // 3. Save iCal file
                 await save_ical_file_async(ics_output_path, ical_string);
-                console.log(`✅ Successfully created iCal file for ${team_name} at ${ics_output_path}`);
+                console.log(`✅ Successfully created iCal file for ${team.name} at ${ics_output_path}`);
 
             } catch (error) {
                 if (error.code === 'ENOENT') {
-                    console.error(`❌ Error for ${team_name}: HTML file not found at ${html_file_path}.`);
-                    console.log(`   -> Did you run 'node get-html-fixtures.js' first?`);
+                    console.error(`❌ Error for ${team.name}: JSON file not found at ${json_file_path}.`);
+                    console.log(`   -> Did you run 'node fixtures-html-to-json.js' first?`);
                 } else {
-                    console.error(`❌ An error occurred processing ${team_name}:`, error.message);
+                    console.error(`❌ An error occurred processing ${team.name}:`, error.message);
                 }
             }
         }
-
-        console.log('🎉All parsing operations finished.');
-
-    } catch (error) {
-        // This outer catch handles critical errors (like failing to load teams.json)
+        console.log('🎉 All iCal generation operations finished.');
+    } catch (error)
+    {
         console.error(`❌ A critical error occurred:`, error.message);
         process.exit(1);
     }
 };
 
-// Run the script
 main();
