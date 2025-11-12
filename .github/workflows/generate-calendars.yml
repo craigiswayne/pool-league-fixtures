@@ -48,6 +48,6 @@ jobs:
           tag_name: 'latest-calendar-test'
           fail_on_unmatched_files: true
           body: 'This release contains the most up-to-date fixtures for each team. Subscribe to the .ics files below.'
-          files: dist/*
+          files: dist/*.ics
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
