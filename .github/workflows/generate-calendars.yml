@@ -3,9 +3,10 @@ name: Publish Fixture Calendar
 on:
   push:
     branches:
-      - "main"
+      - 'main'
+      - 'feature/include-old-fixtures'
   schedule:
-    - cron: "1 0 * * 1"
+    - cron: '1 0 * * 1'
   workflow_dispatch:
 
 permissions:
@@ -28,25 +29,25 @@ jobs:
           node-version: '24'
           cache: 'npm'
 
-      - name: Install Dependencies
+      - name: 'Install Dependencies'
         run: npm install
 
-      - name: Create dist directory
+      - name: 'Create dist directory'
         run: mkdir -p dist
 
-      - name: Scrape Fixtures
-        run: sh scrape.sh > fixtures.html
+      - name: 'Scrape Website for Fixtures'
+        run: node get-html-fixtures.js
 
-      - name: Build iCal file from HTML
-        run: node index.js
+      - name: 'Build iCal file from HTML'
+        run: node create-calendars.js
 
       - name: Create/Update 'latest' Release with Calendar
         uses: softprops/action-gh-release@v1
         with:
-          name: "Latest Fixtures Calendar"
-          tag_name: "latest-calendar"
+          name: 'Latest Fixtures Calendar'
+          tag_name: 'latest-calendar-test'
           fail_on_unmatched_files: true
-          body: "This release contains the most up-to-date fixtures.ics file. Subscribe to the .ics file below."
+          body: 'This release contains the most up-to-date fixtures for each team. Subscribe to the .ics files below.'
           files: dist/*
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
