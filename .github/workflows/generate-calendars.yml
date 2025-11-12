@@ -5,7 +5,7 @@ on:
     branches:
       - 'main'
   schedule:
-    - cron: '1 0 * * 1'
+    - cron: '1 0 * * 1-2'
   workflow_dispatch:
 
 permissions:
@@ -35,13 +35,16 @@ jobs:
         run: mkdir -p dist
 
       - name: 'Scrape Website for Fixtures'
-        run: node get-html-fixtures.js
+        run: node scripts/get-team-pages.js
 
-      - name: 'Extract html Fixtures to json'
-        run: node fixtures-html-to-json.js
+      - name: 'Extract html fixtures to json'
+        run: node scripts/html-to-json-fixtures.js
+
+      - name: 'Extract html results to json'
+        run: node scripts/html-to-json-results.js
 
       - name: 'Convert json Fixtures to ics'
-        run: node fixtures-json-to-ics.js
+        run: node scripts/json-to-ics.js
 
       - name: Create/Update 'latest' Release with Calendar
         uses: softprops/action-gh-release@v1

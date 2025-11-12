@@ -3,8 +3,8 @@ const fs = require('fs').promises;
 const path = require('path');
 const {slugify} = require("./slugify");
 
-const OUTPUT_DIR = 'dist';
-
+const ROOT_DIR = path.resolve(__dirname, '../');
+const OUTPUT_DIR = path.resolve(ROOT_DIR, 'dist');
 const TEAMS_FILE_PATH = path.join(__dirname, 'teams.json');
 
 const http_headers = {
@@ -32,10 +32,10 @@ const http_headers = {
 const scrape_team_fixtures = async (team_url, team_name) => {
     if (!team_url || !team_name) {
         console.error('❌ Error: scrape_team_fixtures called with missing url or name.');
-        return; // Skip this scrape
+        return;
     }
 
-    const file_name = `upcoming-fixtures-${slugify(team_name)}.html`;
+    const file_name = `team-page-${slugify(team_name)}.html`;
     const output_path = path.join(__dirname, OUTPUT_DIR, file_name);
 
     try {
