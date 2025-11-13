@@ -75,14 +75,14 @@ const format_date_for_ical = (date) => {
 };
 
 /**
- * --- CHANGED ---
- * Renamed from 'convert_fixtures_to_ical' to 'convert_events_to_ical'
  * Converts an array of fixtures AND results into a single iCal string.
  * @param {Array<object>} events - The combined array of fixtures and results.
+ *-----
  * @param {object} location_mapper - The location mapper object.
+ * @param {string} team_url - // --- CHANGED --- Added team_url parameter
  * @returns {string}
  */
-const convert_events_to_ical = (events, location_mapper) => {
+const convert_events_to_ical = (events, location_mapper, team_url) => { // --- CHANGED ---
     if (events.length === 0) {
         console.warn('No fixtures or results found in the JSON. An empty calendar file will be created.');
     }
@@ -122,6 +122,7 @@ const convert_events_to_ical = (events, location_mapper) => {
             `UID:${uid}`,
             `SUMMARY:${summary}`,
             `LOCATION:${location}`,
+            `DESCRIPTION:${team_url}`, // --- CHANGED --- Added DESCRIPTION line
             `DTSTAMP:${dtstamp}`,
             `DTSTART:${dtstart_formatted}`,
             `DTEND:${dtend_formatted}`,
@@ -150,8 +151,8 @@ const main = async () => {
         console.log(`Found ${teams.length} team(s) to process...`);
 
         for (const team of teams) {
-            if (!team || !team.name) {
-                console.warn('⚠️ Skipping invalid team entry in teams.json:', team);
+            if (!team || !team.name || !team.url) { // --- CHANGED --- Also check for team.url
+                console.warn('⚠️ Skipping invalid team entry in teams.json (missing name or url):', team);
                 continue;
             }
 
@@ -187,7 +188,8 @@ const main = async () => {
                 const all_events = [...fixtures, ...results];
                 console.log(`Found ${fixtures.length} fixtures and ${results.length} results. Converting to iCal...`);
 
-                const ical_string = convert_events_to_ical(all_events, location_mapper);
+                // --- CHANGED --- Pass team.url to the function
+                const ical_string = convert_events_to_ical(all_events, location_mapper, team.url);
 
                 await save_ical_file_async(ics_output_path, ical_string);
                 console.log(`✅ Successfully created iCal file for ${team.name} at ${ics_output_path}`);
