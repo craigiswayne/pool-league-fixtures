@@ -77,12 +77,11 @@ const format_date_for_ical = (date) => {
 /**
  * Converts an array of fixtures AND results into a single iCal string.
  * @param {Array<object>} events - The combined array of fixtures and results.
- *-----
  * @param {object} location_mapper - The location mapper object.
- * @param {string} team_url - // --- CHANGED --- Added team_url parameter
+ * @param {string} team_url - The URL for the team page.
  * @returns {string}
  */
-const convert_events_to_ical = (events, location_mapper, team_url) => { // --- CHANGED ---
+const convert_events_to_ical = (events, location_mapper, team_url) => {
     if (events.length === 0) {
         console.warn('No fixtures or results found in the JSON. An empty calendar file will be created.');
     }
@@ -114,7 +113,19 @@ const convert_events_to_ical = (events, location_mapper, team_url) => { // --- C
             summary = `${event.home_team} vs ${event.away_team}`;
         }
 
+        // The 'location' is the mapped, full address
         let location = location_mapper[event.venue.toLowerCase()] || event.venue;
+
+        // --- CHANGED ---
+        // Create the multi-line description.
+        // The \n is the correct way to add a new line in an iCal field.
+        let description = `URL: ${team_url}`; // Start with the URL
+        if (event.venue) {
+            // Prepend the original venue name if it exists
+            // 'event.venue' is the original, un-mapped name (e.g., "Railway")
+            description = `Venue: ${event.venue}\n${description}`;
+        }
+        // --- END CHANGE ---
 
         const uid = uuidv4();
         ical_lines.push(
@@ -122,7 +133,7 @@ const convert_events_to_ical = (events, location_mapper, team_url) => { // --- C
             `UID:${uid}`,
             `SUMMARY:${summary}`,
             `LOCATION:${location}`,
-            `DESCRIPTION:${team_url}`, // --- CHANGED --- Added DESCRIPTION line
+            `DESCRIPTION:${description}`, // --- CHANGED ---
             `DTSTAMP:${dtstamp}`,
             `DTSTART:${dtstart_formatted}`,
             `DTEND:${dtend_formatted}`,
@@ -151,7 +162,7 @@ const main = async () => {
         console.log(`Found ${teams.length} team(s) to process...`);
 
         for (const team of teams) {
-            if (!team || !team.name || !team.url) { // --- CHANGED --- Also check for team.url
+            if (!team || !team.name || !team.url) { // Check for url
                 console.warn('⚠️ Skipping invalid team entry in teams.json (missing name or url):', team);
                 continue;
             }
@@ -188,7 +199,7 @@ const main = async () => {
                 const all_events = [...fixtures, ...results];
                 console.log(`Found ${fixtures.length} fixtures and ${results.length} results. Converting to iCal...`);
 
-                // --- CHANGED --- Pass team.url to the function
+                // Pass team.url to the function
                 const ical_string = convert_events_to_ical(all_events, location_mapper, team.url);
 
                 await save_ical_file_async(ics_output_path, ical_string);
